@@ -63,7 +63,7 @@ func SampleAlloc(outputCtx *avcodec.Context, frame *avutil.Frame) uintptr {
 	var result uintptr
 
 	var ptr uintptr
-	ptr = uintptr(unsafe.Pointer(C.calloc((C.ulong)(outputCtx.Channels()), C.sizeof_uint8_t)))
+	ptr = uintptr(unsafe.Pointer(C.calloc((C.uint)(outputCtx.Channels()), C.sizeof_uint8_t)))
 	if ptr == 0 {
 		return 0
 	}
