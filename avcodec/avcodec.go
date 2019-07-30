@@ -147,6 +147,7 @@ const (
 	CodecIDNone  CodecID = C.AV_CODEC_ID_NONE
 	CodecIDMJpeg CodecID = C.AV_CODEC_ID_MJPEG
 	CodecIDLJpeg CodecID = C.AV_CODEC_ID_LJPEG
+	CodecIDAAC   CodecID = C.AV_CODEC_ID_AAC
 )
 
 type Flags int64
@@ -318,7 +319,6 @@ func Version() (int, int, int) {
 	return int(C.GO_AVCODEC_VERSION_MAJOR), int(C.GO_AVCODEC_VERSION_MINOR), int(C.GO_AVCODEC_VERSION_MICRO)
 }
 
-
 func RegisterAll() {
 	C.avcodec_register_all()
 }
@@ -421,12 +421,12 @@ func (pkt *Packet) RescaleTime2(srcTimeBase, dstTimeBase *avutil.Rational) {
 
 func (pkt *Packet) RescalePTS(pts int64, base *avutil.Rational) int64 {
 	src := (*C.AVRational)(unsafe.Pointer(&base.CAVRational))
-	return int64(C.av_rescale_q((C.int64_t)(pts), *src, C.AV_TIME_BASE_Q));
+	return int64(C.av_rescale_q((C.int64_t)(pts), *src, C.AV_TIME_BASE_Q))
 }
 
 func (pkt *Packet) RescalePTS2(pts int64, base *avutil.Rational) int64 {
 	src := (*C.AVRational)(unsafe.Pointer(&base.CAVRational))
-	return int64(C.av_rescale_q((C.int64_t)(pts), C.AV_TIME_BASE_Q, *src));
+	return int64(C.av_rescale_q((C.int64_t)(pts), C.AV_TIME_BASE_Q, *src))
 }
 
 func (pkt *Packet) PTS() int64 {
@@ -737,7 +737,7 @@ func NewContextFromC(cCtx uintptr) *Context {
 	}
 }
 
-func (ctx *Context) CodeContext() (*C.AVCodecContext) {
+func (ctx *Context) CodeContext() *C.AVCodecContext {
 	if ctx.CAVCodecContext != 0 {
 		return (*C.AVCodecContext)(unsafe.Pointer(ctx.CAVCodecContext))
 	}
