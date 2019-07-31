@@ -1,4 +1,4 @@
-package swresample
+package avswresample
 
 // #include "libswresample/swresample.h"
 // #include "libavutil/avutil.h"
