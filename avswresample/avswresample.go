@@ -2,6 +2,7 @@ package avswresample
 
 // #include "libswresample/swresample.h"
 // #include "libavutil/avutil.h"
+// #define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
 // #cgo pkg-config: libswresample libavutil
 import "C"
 import (
@@ -44,14 +45,9 @@ func (swr *SwrContext) Free() {
 	C.swr_free((**C.SwrContext)(unsafe.Pointer(&swr.CAVSwrContext)))
 }
 
-func (swr *SwrContext) SwrConvert(frame *avutil.Frame) error {
-	frame, err := avutil.NewFrame()
-	if err != nil {
-		return err
-	}
-	defer frame.Free()
-
-	errCode := C.swr_convert((*C.SwrContext)(unsafe.Pointer(swr.CAVSwrContext)), (**C.uchar)(frame.ExtendedData()), (C.int)(frame.NumberOfSamples()),
+func (swr *SwrContext) SwrConvert(frame *avutil.Frame, out_buffer uintptr) error {
+	errCode := C.swr_convert((*C.SwrContext)(unsafe.Pointer(swr.CAVSwrContext)), (**C.uchar)(unsafe.Pointer(out_buffer)),
+		(C.int)(C.MAX_AUDIO_FRAME_SIZE),
 		(**C.uint8_t)(frame.ExtendedData()), (C.int)(frame.NumberOfSamples()))
 	if (int)(errCode) < 0 {
 		return avutil.NewErrorFromCode((avutil.ErrorCode)(errCode))
@@ -59,28 +55,15 @@ func (swr *SwrContext) SwrConvert(frame *avutil.Frame) error {
 	return nil
 }
 
-func SampleAlloc(outputCtx *avcodec.Context, frame *avutil.Frame) uintptr {
-	var result uintptr
-
+func AllocBuffer(outputCtx *avcodec.Context, frame *avutil.Frame) uintptr {
 	var ptr uintptr
-	ptr = uintptr(unsafe.Pointer(C.calloc((C.uint)(outputCtx.Channels()), C.sizeof_uint8_t)))
+	ptr = uintptr(unsafe.Pointer(C.av_malloc((C.uint)(outputCtx.Channels()) * (C.uint)(C.MAX_AUDIO_FRAME_SIZE))))
 	if ptr == 0 {
 		return 0
 	}
-
-	if (int)(C.av_samples_alloc((**C.uint8_t)(unsafe.Pointer(ptr)), (*C.int)(C.NULL),
-		(C.int)(outputCtx.Channels()),
-		(C.int)(frame.NumberOfSamples()),
-		(C.enum_AVSampleFormat)(outputCtx.SampleFormat()), 0)) == 0 {
-		C.av_freep(unsafe.Pointer(ptr))
-		C.free(unsafe.Pointer(ptr))
-		return 0
-	}
-	result = (uintptr)(unsafe.Pointer(ptr))
-	return result
+	return ptr
 }
 
-func FreeSample(ptr uintptr) {
-	C.av_freep(unsafe.Pointer(ptr))
-	C.free(unsafe.Pointer(ptr))
+func FreeBuffer(ptr uintptr) {
+	C.av_free(unsafe.Pointer(ptr))
 }
