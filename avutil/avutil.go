@@ -842,11 +842,23 @@ func (f *Frame) SetNumberOfSamples(samples int) {
 	f.CAVFrame.nb_samples = (C.int)(samples)
 }
 
+func (f *Frame) SetChannelLayout(layout ChannelLayout) {
+	f.CAVFrame.channel_layout = (C.uint64_t)(layout)
+}
+
+func (f *Frame) SetSampleRate(sample_rate int) {
+	f.CAVFrame.sample_rate = (C.int)(sample_rate)
+}
+
 func (f *Frame) PixelFormat() PixelFormat {
 	return PixelFormat(f.CAVFrame.format)
 }
 
 func (f *Frame) SetPixelFormat(format PixelFormat) {
+	f.CAVFrame.format = (C.int)(format)
+}
+
+func (f *Frame) SetSampleFormat(format SampleFormat) {
 	f.CAVFrame.format = (C.int)(format)
 }
 

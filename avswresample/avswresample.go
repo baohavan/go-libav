@@ -45,25 +45,12 @@ func (swr *SwrContext) Free() {
 	C.swr_free((**C.SwrContext)(unsafe.Pointer(&swr.CAVSwrContext)))
 }
 
-func (swr *SwrContext) SwrConvert(frame *avutil.Frame, out_buffer uintptr) error {
-	errCode := C.swr_convert((*C.SwrContext)(unsafe.Pointer(swr.CAVSwrContext)), (**C.uchar)(unsafe.Pointer(out_buffer)),
-		(C.int)(C.MAX_AUDIO_FRAME_SIZE),
+func (swr *SwrContext) SwrConvert(frame *avutil.Frame, frameBuffer *avutil.Frame) error {
+	errCode := C.swr_convert((*C.SwrContext)(unsafe.Pointer(swr.CAVSwrContext)), (**C.uchar)(frameBuffer.ExtendedData()),
+		(C.int)(frameBuffer.NumberOfSamples()),
 		(**C.uint8_t)(frame.ExtendedData()), (C.int)(frame.NumberOfSamples()))
 	if (int)(errCode) < 0 {
 		return avutil.NewErrorFromCode((avutil.ErrorCode)(errCode))
 	}
 	return nil
-}
-
-func AllocBuffer(outputCtx *avcodec.Context, frame *avutil.Frame) uintptr {
-	var ptr uintptr
-	ptr = uintptr(unsafe.Pointer(C.av_malloc((C.uint)(outputCtx.Channels()) * (C.uint)(C.MAX_AUDIO_FRAME_SIZE))))
-	if ptr == 0 {
-		return 0
-	}
-	return ptr
-}
-
-func FreeBuffer(ptr uintptr) {
-	C.av_free(unsafe.Pointer(ptr))
 }
