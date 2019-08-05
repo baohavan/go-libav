@@ -2,7 +2,9 @@ package avswresample
 
 // #include "libswresample/swresample.h"
 // #include "libavutil/avutil.h"
-// #define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+//static void go_av_swresample_free(SwrContext *swrCtx) {
+//	swr_free(&swrCtx);
+//}
 // #cgo pkg-config: libswresample libavutil
 import "C"
 import (
@@ -42,7 +44,7 @@ func (swr *SwrContext) Init() error {
 }
 
 func (swr *SwrContext) Free() {
-	C.swr_free((**C.SwrContext)(unsafe.Pointer(&swr.CAVSwrContext)))
+	C.go_av_swresample_free((*C.SwrContext)(unsafe.Pointer(swr.CAVSwrContext)))
 }
 
 func (swr *SwrContext) SwrConvert(frame *avutil.Frame, frameBuffer *avutil.Frame) error {

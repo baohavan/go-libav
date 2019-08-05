@@ -57,7 +57,9 @@ package avutil
 //{
 //	return av_dict_set(&m, key, value, flags);
 //}
-//
+//static void go_av_frame_free(AVFrame *frame) {
+//	av_frame_free(&frame);
+//}
 // #cgo pkg-config: libavutil
 import "C"
 
@@ -766,7 +768,7 @@ func NewFrameFromC(cFrame unsafe.Pointer) *Frame {
 
 func (f *Frame) Free() {
 	if f.CAVFrame != 0 {
-		C.av_frame_free((**C.AVFrame)(unsafe.Pointer(&f.CAVFrame)))
+		C.go_av_frame_free((*C.AVFrame)(unsafe.Pointer(f.CAVFrame)))
 		f.CAVFrame = 0
 	}
 }
