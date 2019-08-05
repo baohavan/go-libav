@@ -749,7 +749,7 @@ func (c *Class) ChildrenClasses() []*Class {
 }
 
 type Frame struct {
-	CAVFrame *C.AVFrame
+	CAVFrame uintptr
 }
 
 func NewFrame() (*Frame, error) {
@@ -761,17 +761,22 @@ func NewFrame() (*Frame, error) {
 }
 
 func NewFrameFromC(cFrame unsafe.Pointer) *Frame {
-	return &Frame{CAVFrame: (*C.AVFrame)(cFrame)}
+	return &Frame{CAVFrame: (uintptr)(cFrame)}
 }
 
 func (f *Frame) Free() {
-	if f.CAVFrame != nil {
-		C.av_frame_free(&f.CAVFrame)
+	if f.CAVFrame != 0 {
+		C.av_frame_free((**C.AVFrame)(unsafe.Pointer(&f.CAVFrame)))
+		f.CAVFrame = 0
 	}
 }
 
+func (f *Frame) Frame() *C.AVFrame {
+	return (*C.AVFrame)(unsafe.Pointer(f.CAVFrame))
+}
+
 func (f *Frame) Ref(dst *Frame) error {
-	code := C.av_frame_ref(dst.CAVFrame, f.CAVFrame)
+	code := C.av_frame_ref((*C.AVFrame)(unsafe.Pointer(dst.CAVFrame)), (*C.AVFrame)(unsafe.Pointer(f.CAVFrame)))
 	if code < 0 {
 		return NewErrorFromCode(ErrorCode(code))
 	}
@@ -779,7 +784,7 @@ func (f *Frame) Ref(dst *Frame) error {
 }
 
 func (f *Frame) Unref() {
-	C.av_frame_unref(f.CAVFrame)
+	C.av_frame_unref((*C.AVFrame)(unsafe.Pointer(f.CAVFrame)))
 }
 
 func (f *Frame) GetBuffer() error {
@@ -787,7 +792,7 @@ func (f *Frame) GetBuffer() error {
 }
 
 func (f *Frame) GetBufferWithAlignment(alignment int) error {
-	code := C.av_frame_get_buffer(f.CAVFrame, C.int(alignment))
+	code := C.av_frame_get_buffer((*C.AVFrame)(unsafe.Pointer(f.CAVFrame)), C.int(alignment))
 	if code < 0 {
 		return NewErrorFromCode(ErrorCode(code))
 	}
@@ -795,160 +800,160 @@ func (f *Frame) GetBufferWithAlignment(alignment int) error {
 }
 
 func (f *Frame) Data(index int) unsafe.Pointer {
-	return unsafe.Pointer(f.CAVFrame.data[index])
+	return unsafe.Pointer(f.Frame().data[index])
 }
 
 func (f *Frame) SetData(index int, data unsafe.Pointer) {
-	f.CAVFrame.data[index] = (*C.uint8_t)(data)
+	f.Frame().data[index] = (*C.uint8_t)(data)
 }
 
 func (f *Frame) LineSize(index int) int {
-	return int(f.CAVFrame.linesize[index])
+	return int(f.Frame().linesize[index])
 }
 
 func (f *Frame) SetLineSize(index int, lineSize int) {
-	f.CAVFrame.linesize[index] = (C.int)(lineSize)
+	f.Frame().linesize[index] = (C.int)(lineSize)
 }
 
 func (f *Frame) ExtendedData() unsafe.Pointer {
-	return unsafe.Pointer(f.CAVFrame.extended_data)
+	return unsafe.Pointer(f.Frame().extended_data)
 }
 
 func (f *Frame) SetExtendedData(data unsafe.Pointer) {
-	f.CAVFrame.extended_data = (**C.uint8_t)(data)
+	f.Frame().extended_data = (**C.uint8_t)(data)
 }
 
 func (f *Frame) Width() int {
-	return int(f.CAVFrame.width)
+	return int(f.Frame().width)
 }
 
 func (f *Frame) SetWidth(width int) {
-	f.CAVFrame.width = (C.int)(width)
+	f.Frame().width = (C.int)(width)
 }
 
 func (f *Frame) Height() int {
-	return int(f.CAVFrame.height)
+	return int(f.Frame().height)
 }
 
 func (f *Frame) SetHeight(height int) {
-	f.CAVFrame.height = (C.int)(height)
+	f.Frame().height = (C.int)(height)
 }
 
 func (f *Frame) NumberOfSamples() int {
-	return int(f.CAVFrame.nb_samples)
+	return int(f.Frame().nb_samples)
 }
 
 func (f *Frame) SetNumberOfSamples(samples int) {
-	f.CAVFrame.nb_samples = (C.int)(samples)
+	f.Frame().nb_samples = (C.int)(samples)
 }
 
 func (f *Frame) SetChannelLayout(layout ChannelLayout) {
-	f.CAVFrame.channel_layout = (C.uint64_t)(layout)
+	f.Frame().channel_layout = (C.uint64_t)(layout)
 }
 
 func (f *Frame) SetSampleRate(sample_rate int) {
-	f.CAVFrame.sample_rate = (C.int)(sample_rate)
+	f.Frame().sample_rate = (C.int)(sample_rate)
 }
 
 func (f *Frame) PixelFormat() PixelFormat {
-	return PixelFormat(f.CAVFrame.format)
+	return PixelFormat(f.Frame().format)
 }
 
 func (f *Frame) SetPixelFormat(format PixelFormat) {
-	f.CAVFrame.format = (C.int)(format)
+	f.Frame().format = (C.int)(format)
 }
 
 func (f *Frame) SetSampleFormat(format SampleFormat) {
-	f.CAVFrame.format = (C.int)(format)
+	f.Frame().format = (C.int)(format)
 }
 
 func (f *Frame) KeyFrame() bool {
-	return f.CAVFrame.key_frame != (C.int)(0)
+	return f.Frame().key_frame != (C.int)(0)
 }
 
 func (f *Frame) SetKeyFrame(keyFrame bool) {
 	if keyFrame {
-		f.CAVFrame.key_frame = 1
+		f.Frame().key_frame = 1
 	} else {
-		f.CAVFrame.key_frame = 0
+		f.Frame().key_frame = 0
 	}
 }
 
 func (f *Frame) PictureType() PictureType {
-	return PictureType(f.CAVFrame.pict_type)
+	return PictureType(f.Frame().pict_type)
 }
 
 func (f *Frame) SetPictureType(ptype PictureType) {
-	f.CAVFrame.pict_type = (C.enum_AVPictureType)(ptype)
+	f.Frame().pict_type = (C.enum_AVPictureType)(ptype)
 }
 
 func (f *Frame) SampleAspectRatio() *Rational {
-	return NewRationalFromC(unsafe.Pointer(&f.CAVFrame.sample_aspect_ratio))
+	return NewRationalFromC(unsafe.Pointer(&f.Frame().sample_aspect_ratio))
 }
 
 func (f *Frame) SetSampleAspectRatio(aspectRatio *Rational) {
-	f.CAVFrame.sample_aspect_ratio.num = (C.int)(aspectRatio.Numerator())
-	f.CAVFrame.sample_aspect_ratio.den = (C.int)(aspectRatio.Denominator())
+	f.Frame().sample_aspect_ratio.num = (C.int)(aspectRatio.Numerator())
+	f.Frame().sample_aspect_ratio.den = (C.int)(aspectRatio.Denominator())
 }
 
 func (f *Frame) PTS() int64 {
-	return int64(f.CAVFrame.pts)
+	return int64(f.Frame().pts)
 }
 
 func (f *Frame) SetPTS(pts int64) {
-	f.CAVFrame.pts = (C.int64_t)(pts)
+	f.Frame().pts = (C.int64_t)(pts)
 }
 
 func (f *Frame) PacketPTS() int64 {
-	return int64(f.CAVFrame.pkt_pts)
+	return int64(f.Frame().pkt_pts)
 }
 
 func (f *Frame) SetPacketPTS(pts int64) {
-	f.CAVFrame.pkt_pts = (C.int64_t)(pts)
+	f.Frame().pkt_pts = (C.int64_t)(pts)
 }
 
 func (f *Frame) PacketDTS() int64 {
-	return int64(f.CAVFrame.pkt_dts)
+	return int64(f.Frame().pkt_dts)
 }
 
 func (f *Frame) SetPacketDTS(dts int64) {
-	f.CAVFrame.pkt_dts = (C.int64_t)(dts)
+	f.Frame().pkt_dts = (C.int64_t)(dts)
 }
 
 func (f *Frame) CodedPictureNumber() int {
-	return int(f.CAVFrame.coded_picture_number)
+	return int(f.Frame().coded_picture_number)
 }
 
 func (f *Frame) SetCodedPictureNumber(number int) {
-	f.CAVFrame.coded_picture_number = (C.int)(number)
+	f.Frame().coded_picture_number = (C.int)(number)
 }
 
 func (f *Frame) DisplayPictureNumber() int {
-	return int(f.CAVFrame.display_picture_number)
+	return int(f.Frame().display_picture_number)
 }
 
 func (f *Frame) SetDisplayPictureNumber(number int) {
-	f.CAVFrame.display_picture_number = (C.int)(number)
+	f.Frame().display_picture_number = (C.int)(number)
 }
 
 func (f *Frame) Quality() int {
-	return int(f.CAVFrame.quality)
+	return int(f.Frame().quality)
 }
 
 func (f *Frame) SetQuality(quality int) {
-	f.CAVFrame.quality = (C.int)(quality)
+	f.Frame().quality = (C.int)(quality)
 }
 
 func (f *Frame) Opaque() unsafe.Pointer {
-	return unsafe.Pointer(f.CAVFrame.opaque)
+	return unsafe.Pointer(f.Frame().opaque)
 }
 
 func (f *Frame) SetOpaque(opaque unsafe.Pointer) {
-	f.CAVFrame.opaque = opaque
+	f.Frame().opaque = opaque
 }
 
 func (f *Frame) Metadata() *Dictionary {
-	dict := uintptr(unsafe.Pointer(C.av_frame_get_metadata(f.CAVFrame)))
+	dict := uintptr(unsafe.Pointer(C.av_frame_get_metadata((*C.AVFrame)(unsafe.Pointer(f.CAVFrame)))))
 	//if dict == nil {
 	//	return nil
 	//}
@@ -957,18 +962,18 @@ func (f *Frame) Metadata() *Dictionary {
 
 func (f *Frame) SetMetadata(dict *Dictionary) {
 	if dict == nil {
-		C.av_frame_set_metadata(f.CAVFrame, nil)
+		C.av_frame_set_metadata((*C.AVFrame)(unsafe.Pointer(f.CAVFrame)), nil)
 		return
 	}
-	C.av_frame_set_metadata(f.CAVFrame, dict.value())
+	C.av_frame_set_metadata((*C.AVFrame)(unsafe.Pointer(f.CAVFrame)), dict.value())
 }
 
 func (f *Frame) BestEffortTimestamp() int64 {
-	return int64(C.av_frame_get_best_effort_timestamp(f.CAVFrame))
+	return int64(C.av_frame_get_best_effort_timestamp((*C.AVFrame)(unsafe.Pointer(f.CAVFrame))))
 }
 
 func (f *Frame) PacketDuration() int64 {
-	return int64(C.av_frame_get_pkt_duration(f.CAVFrame))
+	return int64(C.av_frame_get_pkt_duration((*C.AVFrame)(unsafe.Pointer(f.CAVFrame))))
 }
 
 type OptionAccessor struct {
