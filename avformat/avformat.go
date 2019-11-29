@@ -75,9 +75,9 @@ var (
 type Flags int
 
 const (
-	FlagNoFile       Flags = C.AVFMT_NOFILE
-	FlagNeedNumber   Flags = C.AVFMT_NEEDNUMBER
-	FlagShowIDs      Flags = C.AVFMT_SHOW_IDS
+	FlagNoFile     Flags = C.AVFMT_NOFILE
+	FlagNeedNumber Flags = C.AVFMT_NEEDNUMBER
+	FlagShowIDs    Flags = C.AVFMT_SHOW_IDS
 	//FlagRawPicture   Flags = C.AVFMT_RAWPICTURE
 	FlagGlobalHeader Flags = C.AVFMT_GLOBALHEADER
 	FlagNoTimestamps Flags = C.AVFMT_NOTIMESTAMPS
@@ -471,7 +471,7 @@ type CodecParameters struct {
 	CCodecParameters uintptr
 }
 
-func (cp *CodecParameters) CodecParameters() (*C.AVCodecParameters) {
+func (cp *CodecParameters) CodecParameters() *C.AVCodecParameters {
 	return (*C.AVCodecParameters)(unsafe.Pointer(cp.CCodecParameters))
 }
 
@@ -500,7 +500,7 @@ func NewStreamFromC(cStream uintptr) *Stream {
 	return &Stream{CAVStream: cStream}
 }
 
-func (s *Stream) Stream() (*C.AVStream) {
+func (s *Stream) Stream() *C.AVStream {
 	return (*C.AVStream)(unsafe.Pointer(s.CAVStream))
 }
 
@@ -742,7 +742,7 @@ func (ctx *Context) WriteTrailer() error {
 }
 
 func (ctx *Context) ReadFrame(pkt *avcodec.Packet) (bool, error) {
-	cPkt := (*C.AVPacket)(unsafe.Pointer(pkt.CAVPacket))
+	cPkt := (*C.AVPacket)(unsafe.Pointer(&pkt.CAVPacket))
 	code := C.av_read_frame(ctx.FormatContext(), cPkt)
 	if code < 0 {
 		if avutil.ErrorCode(code) == avutil.ErrorCodeEOF {
@@ -756,7 +756,7 @@ func (ctx *Context) ReadFrame(pkt *avcodec.Packet) (bool, error) {
 func (ctx *Context) WriteFrame(pkt *avcodec.Packet) error {
 	var cPkt *C.AVPacket
 	if cPkt != nil {
-		cPkt = (*C.AVPacket)(unsafe.Pointer(pkt.CAVPacket))
+		cPkt = (*C.AVPacket)(unsafe.Pointer(&pkt.CAVPacket))
 	}
 	code := C.av_write_frame(ctx.FormatContext(), cPkt)
 	if code < 0 {
@@ -768,7 +768,7 @@ func (ctx *Context) WriteFrame(pkt *avcodec.Packet) error {
 func (ctx *Context) InterleavedWriteFrame(pkt *avcodec.Packet) error {
 	var cPkt *C.AVPacket
 	if pkt != nil {
-		cPkt = (*C.AVPacket)(unsafe.Pointer(pkt.CAVPacket))
+		cPkt = (*C.AVPacket)(unsafe.Pointer(&pkt.CAVPacket))
 	}
 	code := C.av_interleaved_write_frame(ctx.FormatContext(), cPkt)
 	if code < 0 {
@@ -962,7 +962,6 @@ type IOContext struct {
 func (ctx *IOContext) IOContext() *C.AVIOContext {
 	return (*C.AVIOContext)(unsafe.Pointer(ctx.CAVIOContext))
 }
-
 
 func OpenIOContext(url string, flags IOFlags, cb *IOInterruptCallback, options *avutil.Dictionary, pl unsafe.Pointer) (*IOContext, error) {
 	cURL := C.CString(url)

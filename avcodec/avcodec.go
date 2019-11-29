@@ -363,48 +363,48 @@ func (psd *PacketSideData) SetType(t PacketSideDataType) {
 
 type Packet struct {
 	//CAVPacket *C.AVPacket
-	CAVPacket uintptr
+	CAVPacket C.AVPacket
 }
 
-func NewPacket() (*Packet, error) {
-	cPkt := C.go_av_packet_alloc()
-	if cPkt == 0 {
-		return nil, ErrAllocationError
-	}
-	return NewPacketFromC(uintptr(cPkt)), nil
-}
+//func NewPacket() (*Packet, error) {
+//	cPkt := C.go_av_packet_alloc()
+//	if cPkt == 0 {
+//		return nil, ErrAllocationError
+//	}
+//	return NewPacketFromC(uintptr(cPkt)), nil
+//}
 
 func (pkt *Packet) InitPacket() {
 	C.av_init_packet(pkt.Packet())
 }
 
-func NewPacket2() (Packet, error) {
-	cPkt := uintptr(unsafe.Pointer(C.av_packet_alloc()))
-	if cPkt == 0 {
-		return Packet{CAVPacket: 0}, ErrAllocationError
-	}
-	return NewPacketFromC2(uintptr(unsafe.Pointer(cPkt))), nil
-}
+//func NewPacket2() (Packet, error) {
+//	cPkt := uintptr(unsafe.Pointer(C.av_packet_alloc()))
+//	if cPkt == 0 {
+//		return Packet{CAVPacket: 0}, ErrAllocationError
+//	}
+//	return NewPacketFromC2(uintptr(unsafe.Pointer(cPkt))), nil
+//}
 
-func NewPacketFromC(cPkt uintptr) *Packet {
-	return &Packet{CAVPacket: cPkt}
-}
-
-func NewPacketFromC2(cPkt uintptr) Packet {
-	return Packet{CAVPacket: cPkt}
-}
+//func NewPacketFromC(cPkt uintptr) *Packet {
+//	return &Packet{CAVPacket: cPkt}
+//}
+//
+//func NewPacketFromC2(cPkt uintptr) Packet {
+//	return Packet{CAVPacket: cPkt}
+//}
 
 func (pkt *Packet) Packet() *C.AVPacket {
-	return (*C.AVPacket)(unsafe.Pointer(pkt.CAVPacket))
+	return (*C.AVPacket)(unsafe.Pointer(&pkt.CAVPacket))
 }
 
-func (pkt *Packet) FreePacket() {
-	C.go_av_packet_free2(unsafe.Pointer(pkt.CAVPacket))
-}
-
-func (pkt *Packet) Free() {
-	C.go_av_packet_free(unsafe.Pointer(pkt.CAVPacket))
-}
+//func (pkt *Packet) FreePacket() {
+//	C.go_av_packet_free2(unsafe.Pointer(&pkt.CAVPacket))
+//}
+//
+//func (pkt *Packet) Free() {
+//	C.go_av_packet_free(unsafe.Pointer(&pkt.CAVPacket))
+//}
 
 func (pkt *Packet) Ref(dst *Packet) error {
 	code := C.av_packet_ref(dst.Packet(), pkt.Packet())
