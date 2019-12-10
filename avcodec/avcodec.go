@@ -368,8 +368,9 @@ type Packet struct {
 
 func NewPacket() (*Packet, error) {
 	cPkt := C.go_av_packet_alloc()
+
 	if cPkt == 0 {
-		return nil, ErrAllocationError
+		return Packet{}, ErrAllocationError
 	}
 	return NewPacketFromC(uintptr(cPkt)), nil
 }
@@ -386,8 +387,8 @@ func NewPacket2() (Packet, error) {
 	return NewPacketFromC2(uintptr(unsafe.Pointer(cPkt))), nil
 }
 
-func NewPacketFromC(cPkt uintptr) *Packet {
-	return &Packet{CAVPacket: cPkt}
+func NewPacketFromC(cPkt uintptr) Packet {
+	return Packet{CAVPacket: cPkt}
 }
 
 func NewPacketFromC2(cPkt uintptr) Packet {
@@ -403,7 +404,10 @@ func (pkt *Packet) FreePacket() {
 }
 
 func (pkt *Packet) Free() {
-	C.go_av_packet_free(unsafe.Pointer(pkt.CAVPacket))
+	if pkt.CAVPacket != 0 {
+		C.go_av_packet_free(unsafe.Pointer(pkt.CAVPacket))
+		pkt.CAVPacket = 0
+	}
 }
 
 func (pkt *Packet) Ref(dst *Packet) error {

@@ -50,6 +50,7 @@ package avformat
 //static int go_avformat_open_input(AVFormatContext *ps, const char *filename, AVInputFormat *fmt, AVDictionary **options) {
 //	return avformat_open_input(&ps, filename, fmt, options);
 //}
+//
 //static int go_avio_closep(void *pCtx) {
 //	return avio_closep((AVIOContext**)(&pCtx));
 //}
@@ -289,7 +290,12 @@ func (pd *ProbeData) SetFileName(fileName *string) error {
 	}
 	pd.CAVProbeData.filename = C.CString(*fileName)
 	if pd.CAVProbeData.filename == nil {
-		return ErrAllocationError
+		return Err
+    
+    
+    
+    
+    ationError
 	}
 	return nil
 }
@@ -733,6 +739,14 @@ func (ctx *Context) WriteHeader(options *avutil.Dictionary) error {
 	return nil
 }
 
+func (ctx *Context) WriteHeader2() error {
+	code := C.avformat_write_header(ctx.FormatContext(), nil)
+	if code < 0 {
+		return avutil.NewErrorFromCode(avutil.ErrorCode(code))
+	}
+	return nil
+}
+
 func (ctx *Context) WriteTrailer() error {
 	code := C.av_write_trailer(ctx.FormatContext())
 	if code < 0 {
@@ -765,9 +779,9 @@ func (ctx *Context) WriteFrame(pkt *avcodec.Packet) error {
 	return nil
 }
 
-func (ctx *Context) InterleavedWriteFrame(pkt *avcodec.Packet) error {
+func (ctx *Context) InterleavedWriteFrame(pkt avcodec.Packet) error {
 	var cPkt *C.AVPacket
-	if pkt != nil {
+	if pkt.CAVPacket != 0 {
 		cPkt = (*C.AVPacket)(unsafe.Pointer(pkt.CAVPacket))
 	}
 	code := C.av_interleaved_write_frame(ctx.FormatContext(), cPkt)
